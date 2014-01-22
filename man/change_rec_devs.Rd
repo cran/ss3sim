@@ -1,0 +1,38 @@
+\name{change_rec_devs}
+\alias{change_rec_devs}
+\title{Replace recruitment deviations}
+\usage{
+change_rec_devs(recdevs_new, file_in = "ss3.par", file_out = "ss3.par")
+}
+\arguments{
+  \item{recdevs_new}{A vector of new recruitment
+  deviations.}
+
+  \item{file_in}{Input SS3 par file.}
+
+  \item{file_out}{Output SS3 par file.}
+}
+\value{
+A modified SS3 \code{.par} file.
+}
+\description{
+This function replaces the recruitment deviations in the
+\code{ss3.par} file with those specified in
+\code{recdevs_new}, as well as a comment (for debugging).
+It then writes a new file with name \code{file_out} into
+the working directory.
+}
+\examples{
+# Create a temporary folder for the output:
+temp_path <- file.path(tempdir(), "ss3sim-recdev-example")
+dir.create(temp_path, showWarnings = FALSE)
+
+par_file <- system.file("extdata", "models", "cod-om", "ss3.par",
+  package = "ss3sim")
+change_rec_devs(recdevs_new = rlnorm(100), file_in = par_file,
+  file_out = paste0(temp_path, "/test.par"))
+}
+\author{
+Cole Monnahan
+}
+
