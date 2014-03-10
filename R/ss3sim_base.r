@@ -26,17 +26,7 @@
 #'   and use for the specified simulations.
 #' @param em_dir The directory with the estimation model you want to copy
 #'   and use for the specified simulations.
-#' @param user_recdevs An optional matrix of recruitment deviations to replace
-#'   the recruitment deviations built into the package. The columns represent
-#'   run iterations and the rows represent years. \code{user_recdevs} can be a
-#'   matrix of 0s for deterministic model checking. For traditional stochastic
-#'   simulations these would be independent and normally distributed deviations
-#'   with a standard deviation equal to the desired sigma R. Note that these
-#'   recruitment deviations will be used verbatim (after exponentiation).
-#'   \code{user_recdevs} will *not* be multiplied by sigma R and they will *not*
-#'   be log-normal bias corrected. If \code{user_recdevs} are specified as
-#'   anything besides \code{NULL} the package will issue a warning about this.
-#'   Biased recruitment deviations can lead to biased model results.
+#' @template user_recdevs
 #' @param bias_adjust Run bias adjustment first? See \code{\link{run_bias_ss3}}.
 #' @param bias_nsim If bias adjustment is run, how many simulations should the
 #'   bias adjustment factor be estimated from? It will take the mean of the
@@ -55,6 +45,11 @@
 #'   non-invertible Hessian before a warning will be produced. If this
 #'   percentage is exceeded then a file \code{WARNINGS.txt} will be produced.
 #'   Currently, the simulations will continue to run.
+#' @param seed The seed value to pass to \code{\link{get_recdevs}} when
+#'   generating recruitment deviations. The generated recruitment deviations
+#'   depend on the iteration value, but also on the value of \code{seed}. A 
+#'   given combinatination of iteration, number of years, and \code{seed} value 
+#'   will result in the same recruitment deviations.
 #' @param ... Anything extra to pass to \code{\link{run_ss3model}}. For example,
 #'   you may want to pass additional options to \code{SS3} through the argument
 #'   \code{admb_options}. Anything that doesn't match a named argument in
@@ -163,7 +158,7 @@ ss3sim_base <- function(iterations, scenarios, f_params,
   tv_params, om_dir, em_dir,
   retro_params = NULL, user_recdevs = NULL, bias_adjust = FALSE,
   bias_nsim = 5, bias_already_run = FALSE, hess_always = FALSE,
-  print_logfile = TRUE, sleep = 0, conv_crit = 0.2, ...)
+  print_logfile = TRUE, sleep = 0, conv_crit = 0.2, seed = 21, ...)
 {
 
   # In case ss3sim_base is stopped before finishing:
@@ -201,7 +196,7 @@ ss3sim_base <- function(iterations, scenarios, f_params,
       # This turns "bias/1" into "1" and leaves "1" unchanged
       this_run_num <- as.numeric(rev(strsplit(as.character(i), "/")[[1]])[1])
 
-      recdevs <- get_recdevs(iteration = this_run_num, n = 2000)
+      recdevs <- get_recdevs(iteration = this_run_num, n = 2000, seed = seed)
       if(is.null(user_recdevs)) {
         sc_i_recdevs <- sigmar * recdevs - sigmar^2/2 # from the package data
       } else {

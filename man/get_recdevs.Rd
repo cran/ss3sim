@@ -2,13 +2,16 @@
 \alias{get_recdevs}
 \title{Return a set of recruitment deviations}
 \usage{
-get_recdevs(iteration, n)
+get_recdevs(iteration, n, seed = 21)
 }
 \arguments{
   \item{iteration}{The iteration number. This is used as an
   ID to set the random number seed.}
 
   \item{n}{The length of the vector returned.}
+
+  \item{seed}{An integer value to pass to
+  \code{\link[base]{set.seed}}.}
 }
 \value{
 A vector of standard normal recruitment deviations.

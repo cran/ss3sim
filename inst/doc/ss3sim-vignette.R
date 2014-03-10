@@ -6,7 +6,7 @@ message=FALSE, autodep=TRUE, fig.path='figure/', fig.width=5, par=TRUE)
 opts_chunk$set(warning=FALSE, message=FALSE, tidy=FALSE, refresh=TRUE)
 opts_chunk$set(dev = 'pdf')
 opts_knit$set(out.format = "latex")
-thm = knit_theme$get("github.css")
+thm = knit_theme$get("solarized-light.css")
 knit_theme$set(thm)
 
 
@@ -38,7 +38,7 @@ knit_theme$set(thm)
 ## vignette("ss3sim-vignette")
 
 
-## ----citation------------------------------------------------------------
+## ----citation, cache=FALSE-----------------------------------------------
 citation("ss3sim")
 
 
@@ -105,8 +105,8 @@ recdevs_det <- matrix(0, nrow = 100, ncol = 20)
 
 
 ## ----load-output---------------------------------------------------------
-load("ts_dat.rda")
-load("scalar_dat.rda")
+data("ts_dat", package = "ss3sim")
+data("scalar_dat", package = "ss3sim")
 
 
 ## ----transform-output----------------------------------------------------
@@ -219,14 +219,16 @@ print(p)
 ##   F = "F", M = "M", R = "R", S = "S")
 
 
-## ----parallel-one--------------------------------------------------------
-require(doParallel)
-registerDoParallel(cores = 4)
+## ----parallel-one, eval=FALSE--------------------------------------------
+## require(doParallel)
+## registerDoParallel(cores = 4)
 
 
-## ----parallel-two--------------------------------------------------------
-require(foreach)
-getDoParWorkers()
+## ----parallel-two, eval=FALSE--------------------------------------------
+## require(foreach)
+## getDoParWorkers()
+## 
+## ## [1] 4
 
 
 ## ----parallel-three, eval=FALSE------------------------------------------
