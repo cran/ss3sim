@@ -18,6 +18,7 @@
 #'   \code{\link[base]{sapply}} function for each of the bias adjustment runs.
 #' @seealso \code{\link{run_bias_ss3}}, \code{\link{run_ss3sim}},
 #'   \code{\link{ss3sim_base}}
+#' @importFrom r4ss SS_output SS_fitbiasramp
 #' @export
 #' @return
 #' A plain text file containing the bias adjustment variables is created at
@@ -30,20 +31,31 @@
 
 bias_ss3 <- function(iter, dir) {
   outfile = "AdjustBias.DAT"
-  if(file.exists(paste0(dir, "/", iter, "/em/covar.sso"))==TRUE)
-  {
-    myoutput = r4ss::SS_output(dir = paste0(dir, "/", iter, "/em"), repfile =
-      "Report.sso", compfile = "CompReport.sso", covarfile =
-      "covar.sso", forecast = FALSE)
-    pdf(paste0(dir, "/biasramp-", iter, ".pdf"))
-    biasvars = try(r4ss::SS_fitbiasramp(replist = myoutput), TRUE)
-    dev.off()
-  }
-
-  if(file.exists(paste0(dir, "/", iter, "/em/covar.sso"))==FALSE)
-  {
+  #Check that the run converged and that SS_output will not give you a stop()
+  test <- readLines(file.path(dir, iter, "em", "Report.sso"))
+  check <- sum(grepl("na", grep("SPB_[0-9]+", test, value = TRUE),
+    ignore.case = TRUE))
+  if(check > 2) {
     biasvars = list()
-    biasvars$df = matrix(rep(NA,5),nrow=5)
+    biasvars$df = matrix(rep(NA, 5), nrow = 5)
+  } else {
+    if(file.exists(paste0(dir, "/", iter, "/em/covar.sso"))==TRUE)
+    {
+      myoutput = suppressWarnings(
+        SS_output(dir = paste0(dir, "/", iter, "/em"), repfile =
+        "Report.sso", compfile = "none", covarfile =
+        "covar.sso", forecast = FALSE, verbose = FALSE, ncols = 300,
+        printstats = FALSE, NoCompOK = TRUE))
+      pdf(paste0(dir, "/biasramp-", iter, ".pdf"))
+      biasvars = try(SS_fitbiasramp(replist = myoutput), TRUE)
+      dev.off()
+    }
+
+    if(file.exists(paste0(dir, "/", iter, "/em/covar.sso"))==FALSE)
+    {
+      biasvars = list()
+      biasvars$df = matrix(rep(NA,5),nrow=5)
+    }
   }
 
   if (is.list(biasvars) == TRUE) {

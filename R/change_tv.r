@@ -5,23 +5,24 @@
 #' \code{change_tv} is specifically set up to work with an operating model
 #' \code{.ctl} file.
 #'
-#' @param change_tv_list A list of named vectors. Names correspond to parameters
+#' @param change_tv_list *A list of named vectors. Names correspond to parameters
 #' in the operating model that currently do not use environmental deviations and
 #' the vectors correspond to deviations. See the section "Specifying the
 #' \code{change_tv_list}" below for help on specifying this argument.
-#' @param ctl_file_in Input SS3 control file
-#' @param ctl_file_out Output SS3 control file
-#' @param dat_file_in Input SS3 data file
-#' @param dat_file_out Output SS3 data file
-#' @param par_file_in Input SS3 parameter file
-#' @param par_file_out Output SS3 parameter file
-#' @param starter_file_in Input SS3 starter file
-#' @param starter_file_out Output SS3 starter file
-#' @param report_file Input SS3 report file
+#' @template ctl_file_in
+#' @template ctl_file_out
+#' @template dat_file_in
+#' @template dat_file_out
+#' @template par_file_in
+#' @template par_file_out
+#' @template str_file_in
+#' @template str_file_out
+#' @param rpt_file_in Input SS3 report file
 #' @author Kotaro Ono, Carey McGilliard, and Kelli Johnson
+#' @family change functions
 #' @return The function creates modified versions of the \code{.par},
 #'   \code{.starter}, \code{.ctl}, and \code{.dat} files.
-#'
+#' @template casefile-footnote
 #' @details
 #' Although there are three ways to implement time-varying parameters within
 #' SS3, \pkg{ss3sim} and \code{change_tv} only use the environmental variable
@@ -87,7 +88,7 @@
 #' setwd("Simple")
 #'
 #' # Run SS3 to create control.ss_new and Report.sso:
-#' system("SS3 starter.ss -noest")
+#' system("ss3_24o_safe starter.ss -noest")
 #'
 #' change_tv(change_tv_list = list("NatM_p_1_Fem_GP_1" = c(rep(0, 20),
 #'       rep(.1, 11)), "SR_BH_steep"=rnorm(31, 0, 0.05)), ctl_file_in =
@@ -104,13 +105,16 @@ change_tv <- function(change_tv_list,
   ctl_file_in = "control.ss_new", ctl_file_out = "om.ctl",
   dat_file_in = "ss3.dat", dat_file_out = "ss3.dat",
   par_file_in = "ss3.par", par_file_out = "ss3.par",
-  starter_file_in = "starter.ss", starter_file_out = "starter.ss",
-  report_file = "Report.sso") {
+  str_file_in = "starter.ss", str_file_out = "starter.ss",
+  rpt_file_in = "Report.sso") {
+
+  # Always use safe mode here:
+  ss_bin <- "ss3_24o_safe"
 
   ss3.ctl    <- readLines(con = ctl_file_in)
   ss3.dat    <- readLines(con = dat_file_in)
-  ss3.starter<- readLines(con = starter_file_in)
-  ss3.report <- readLines(con = report_file)
+  ss3.starter<- readLines(con = str_file_in)
+  ss3.report <- readLines(con = rpt_file_in)
 
   year.beg <- grep("#_styr",  ss3.dat, value = TRUE )
   year.end <- grep("#_endyr", ss3.dat, value = TRUE )
@@ -407,21 +411,23 @@ for(i in seq_along(temp.data)) {
     ss3.starter[usepar.ch] <- "0 # 0=use init values in control file; 1=use ss3.par"
     ss3.starter[usepar.ch-2] <- dat_file_out
     ss3.starter[usepar.ch-1] <- ctl_file_out
-    writeLines(ss3.starter, con = starter_file_out)
+    writeLines(ss3.starter, con = str_file_out)
+
+    bin <- get_bin(ss_bin)
 
     #Call ss3 for a run that includes the environmental link
     os <- .Platform$OS.type
       if(os == "unix") {
-        system("SS3 -noest", ignore.stdout = TRUE)
+        system(paste(ss_bin, "-noest"), ignore.stdout = TRUE)
       } else {
-        system("SS3 -noest", show.output.on.console = FALSE, invisible = TRUE, ignore.stdout = TRUE)
+        system(paste(ss_bin, "-noest"), show.output.on.console = FALSE, invisible = TRUE, ignore.stdout = TRUE)
       }
 
     #Change starter file option back to using .par!
     ss3.starter[usepar.ch] = "1 # 0=use init values in control file; 1=use ss3.par"
-    writeLines(ss3.starter, con = starter_file_out)
+    writeLines(ss3.starter, con = str_file_out)
 
-  ss3.report <- readLines(con = report_file)
+  ss3.report <- readLines(con = rpt_file_in)
   ss3.par    <- readLines(con = par_file_in)
 
   env.name <- sapply(names(change_tv_list), function(x) {
@@ -450,6 +456,22 @@ for(q in seq_along(change_tv_list)) {
     if(env.lab[q] == "sx") {
       num.sx <- grep("Sel_.._", ss3.report )
       pos.sx <- grep(env.name[q], ss3.report[num.sx])
+      # The above code is looking for a number, which might be in more
+      # than one line, but really we just want to check that the
+      # parameter number is in a line that contains the letters ENV
+      if (length(pos.sx) > 1) {
+        allnames <- grep(env.name[q], ss3.report[num.sx], value = TRUE)
+        allchars <- strsplit(allnames, " ")
+        allchars <- lapply(allchars, function(x) x[!x == ""])
+        getthisone <- grep(env.name[q], sapply(allchars, "[[", 1))
+        doublecheck <- grep("ENV", allnames)
+        if (getthisone != doublecheck) {
+          stop("The selectivity parameter cannot be indexed using\n
+               the current framework. Please contact the developers\n
+               and let them know, so that this can be fixed.")
+        }
+        pos.sx <- pos.sx[getthisone]
+      }
       search.phrase <- paste0("# selparm[", pos.sx - 1, "]:")
       line.a <- grep(search.phrase, ss3.par, fixed = TRUE)
       add.par <- c(paste0("# selparm[",pos.sx,"]:"),

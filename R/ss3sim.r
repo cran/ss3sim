@@ -16,7 +16,8 @@
 #' data also contains example plain-text control files in the folder
 #' \code{inst/extdata/cases} and \code{inst/extdata/eg-cases}.
 #'
-#' To carry out \pkg{ss3sim} simulations, you will need to have SS3 installed on
+#' To carry out \pkg{ss3sim} simulations
+#' with the version from CRAN, you will need to have SS3 installed on
 #' your computer and the binary needs to be in the path that \R sees. See the
 #' section "Installing the ss3sim R package" in the vignette
 #' \code{vignette("ss3sim-vignette")} for instructions on installing SS3. See
@@ -25,9 +26,9 @@
 #'
 #' The main \pkg{ss3sim} functions are divided into three types:
 #'
-#' 1. \code{change} functions that manipulate SS3 configuration files.
-#' These manipulations generate an underlying "truth" (operating
-#' models) and control our assessment of those models (estimation
+#' 1. \code{change} and \code{sample} functions that manipulate SS3
+#' configuration files. These manipulations generate an underlying "truth"
+#' (operating models) and control our assessment of those models (estimation
 #' models).
 #' \itemize{
 #' \item \code{\link{change_f}}: Controls fishing mortality.
@@ -35,13 +36,13 @@
 #' \item \code{\link{change_tv}}: Adds time-varying features. For
 #' example, time-varying natural mortality, growth, or selectivity.
 #'
-#' \item \code{\link{change_lcomp}}: Controls how length composition
+#' \item \code{\link{sample_lcomp}}: Controls how length composition
 #' data are sampled.
 #'
-#' \item \code{\link{change_agecomp}}: Controls how age composition
+#' \item \code{\link{sample_agecomp}}: Controls how age composition
 #' data are sampled.
 #'
-#' \item \code{\link{change_index}}: Controls how the fishery and
+#' \item \code{\link{sample_index}}: Controls how the fishery and
 #' survey indices are sampled.
 #'
 #' \item \code{\link{change_e}}: Controls which and how parameters are
@@ -52,6 +53,12 @@
 #'
 #' \item \code{\link{change_rec_devs}}: Substitutes recruitment
 #' deviations.
+#'
+#' \item \code{\link{change_lcomp_constant}}: Set the robustification constant
+#' for length composition data.
+#'
+#' \item \code{\link{change_tail_compression}}: Replace tail compression value
+#' for length composition data.
 #' }
 #'
 #' 2. \code{run} functions that conduct simulations. These functions
@@ -74,7 +81,8 @@
 #' of scenarios.
 #' }
 #'
-#' See the package vignette \code{vignette("ss3sim-vignette")} for
+#' See the introductory vignette \code{vignette("introduction",
+#' package = "ss3sim")} for
 #' more extensive explanation of how to use the \pkg{ss3sim} \R package.
 #'
 #' \pkg{ss3sim} was developed by graduate students and post doctoral researchers
@@ -89,4 +97,8 @@
 #'
 #' @docType package
 #' @name ss3sim
+#' @importFrom grDevices dev.off pdf rgb
+#' @importFrom graphics abline legend mtext par plot
+#' @importFrom stats as.formula na.omit reshape rmultinom rnorm
+#' @importFrom utils read.csv read.table write.csv write.table
 NULL

@@ -13,8 +13,8 @@
 #' affects whether the model folder gets named "om" or "em"
 #' @author Sean Anderson, Kelli Johnson
 #' @export
-#' @return
-#' A set of nested folders starting with the scenario ID, then the
+#' @return An invisble boolean for whether that iteration already
+#' existed. A set of nested folders starting with the scenario ID, then the
 #' iterations, then "om" or "em", and then the SS model files.
 #'
 #' @examples
@@ -24,41 +24,42 @@
 #'
 #' # Copy the operating model:
 #' copy_ss3models(model_dir = om_folder, type = "om", iterations =
-#'   1:3, scenarios = "D0-E0-F0-M0-R0-testing")
+#'   1:3, scenarios = "D0-F0-testing")
 #' # Now look at your working directory in your file system
 #'
 #' # Copy the estimation model with two scenario IDs:
 #' copy_ss3models(model_dir = om_folder, type = "em", iterations = 1:2,
-#'   scenarios = c("D1-E0-F0-M0-R0-testing", "D1-E1-F0-M0-R0-testing"))
+#'   scenarios = c("D1-F0-testing", "D2-F0-testing"))
 #' # (Note that all the scenario argument does here is affect the
 #' # folder names.)
 #'
 #' # Clean up:
-#' unlink("D0-E0-F0-M0-R0-testing", recursive = TRUE)
-#' unlink("D1-E0-F0-M0-R0-testing", recursive = TRUE)
-#' unlink("D1-E1-F0-M0-R0-testing", recursive = TRUE)
+#' unlink("D0-F0-testing", recursive = TRUE)
+#' unlink("D1-F0-testing", recursive = TRUE)
+#' unlink("D2-F0-testing", recursive = TRUE)
 
 copy_ss3models <- function(model_dir, scenarios,
-  iterations = 1:100, type = c("om", "em")) {
-
-  type <- type[1]
-  if(!type %in% c("om", "em"))
-    stop("The value passed to the argument type must be either om or em.")
-
-  for(sc in scenarios) {
-    for(it in iterations) {
-      from <- pastef(model_dir)
-      to <- pastef(sc, it)
-      dir.create(to, showWarnings = FALSE, recursive = TRUE)
-      if(file.exists(pastef(to, type))){
-        stop(paste0(to, "/", type, " already exists. Have you already run this model?"))
-      } else {
-        file.copy(from, to, recursive = TRUE)
-        orig_model_folder <- rev(strsplit(from, "/")[[1]])[1]
-        file.rename(pastef(to, orig_model_folder), pastef(to, type))
-        # sanity check and rename for consistency:
-        verify_input(model_dir = pastef(to, type), type = type)
-      }
+                           iterations = 1:100, type = c("om", "em")) {
+    type <- type[1]
+    if(!type %in% c("om", "em"))
+        stop("The value passed to the argument type must be either om or em.")
+    for(sc in scenarios) {
+        for(it in iterations) {
+            from <- pastef(model_dir)
+            to <- pastef(sc, it)
+            dir.create(to, showWarnings = FALSE, recursive = TRUE)
+            if(file.exists(pastef(to, type))){
+                warning(paste0(to, "/", type, " already exists. Have you already run this model? Skipping this iteration"))
+                iteration_exists <- TRUE
+            } else {
+                file.copy(from, to, recursive = TRUE)
+                orig_model_folder <- rev(strsplit(from, "/")[[1]])[1]
+                file.rename(pastef(to, orig_model_folder), pastef(to, type))
+                ## sanity check and rename for consistency:
+                verify_input(model_dir = pastef(to, type), type = type)
+                iteration_exists <- FALSE
+            }
+        }
     }
-  }
+    return(invisible(iteration_exists))
 }

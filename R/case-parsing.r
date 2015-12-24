@@ -4,42 +4,25 @@
 get_args <- function(file) {
 
   x <- read.csv(file, stringsAsFactors = FALSE, col.names =
-    c("arg", "val"), header = FALSE, strip.white = TRUE, sep = ";",
-    comment.char = "#")
+      c("arg", "val"), header = FALSE, strip.white = TRUE, sep = ";",
+    comment.char = "#", quote = "")
   y <- as.list(x$val)
   names(y) <- x$arg
 
-# if all numeric then eval(parse(text =
-# if has [a-zA-Z]( then eval(parse(text =
-# if has : then eval(parse(text =
-# else use as character
+  # turn into correct class:
   lapply(y, function(z) {
-    if(is_f(as.character(z))) {
-      eval(parse(text = z)) # turn into correct class
+    if(!is.na(z)) {
+      y <- tryCatch(eval(parse(text = z)),
+        error = function(e) as.character(z))
+      if(is.function(y)) { # or function contents will be parsed!
+        as.character(z)
+      } else {
+        y
+      }
     } else {
-      as.character(z)
-    }}
-    )
-}
-
-#' Check if a string is a function
-#'
-#' This function takes a character object and checks if it looks like
-#' an \R function.
-#'
-#' @param x A character object
-# @examples
-# is_f("testing")
-# is_f("c(1, 2, 3")
-# is_f("seq(1, 10)")
-# is_f("NULL")
-# is_f("NA")
-is_f <- function(x) {
-  if(!is.character(x)) stop("x must be a character")
-  fn <- grepl("[a-zA-Z0-9]\\(", x) # is a function
-  nu <- !grepl("[a-zA-Z]", x) # is not character (is numeric)
-  ## If a function, numeric, NULL or NA treat as a function
-  ifelse(fn | nu | x== "NULL" | x== "NA", TRUE, FALSE)
+      NA
+    }
+  })
 }
 
 #' Take a scenario ID and a case type and return the case number
@@ -126,39 +109,34 @@ get_caseval <- function(scenario, case) {
 #'   "ss3sim")
 #'
 #' # An example using the cases defined by default:
-#' get_caseargs(case_folder, scenario = "D0-E0-F0-M0-R0-cod")
+#' get_caseargs(case_folder, scenario = "D0-F0-cod")
 #'
 #' # With a custom time-varying case for selectivity, which we'll call
 #' # the S case. Here, we'll need to define which file the case S should
 #' # read from ("S*-cod.txt"):
 #' get_caseargs(case_folder, scenario = "D0-E0-F0-M0-R0-S0-cod",
 #'   case_files = list(E = "E", D = c("index", "lcomp", "agecomp"), F =
-#'     "F", M = "M", R = "R", S = "S"))
+#'     "F", M = "M", R = "retro", S = "S"))
 #' @export
 
 get_caseargs <- function(folder, scenario, ext = ".txt",
-  case_files = list(M = "M", F = "F", D = c("index", "lcomp", "agecomp"),
-    R = "R", E = "E")) {
+  case_files = list(F = "F", D = c("index", "lcomp", "agecomp"))) {
   case_vals <- names(case_files)
 
-# take the text before the last hyphen:
-  spp <- substr(scenario, max(grep("-", strsplit(scenario,
-          NULL)[[1]]))+1, nchar(scenario))
+  # take the text before the last hyphen:
+  spp <- substr(scenario, max(grep("[0-9]",
+    strsplit(scenario, NULL)[[1]])) + 2, nchar(scenario))
 
-  if(grepl("^[A-Z][0-9]+$", spp)) {
-    message(paste("Using", spp, "as the stock ID.\n"))
-  }
-
-# remove the stock ID from the scenario:
+  # remove the stock ID from the scenario:
   scenario <- substr(scenario, 1, nchar(scenario) - nchar(spp) - 1)
 
-# Check that all cases are contained in the scenario:
+  # Check that all cases are contained in the scenario:
   out_sink <- sapply(case_vals, function(x) {
     if (!grepl(x, scenario))
       stop(paste("Case", x, "isn't contained in scenario", scenario))
   })
 
-# Check that all scenario-declared cases have files:
+  # Check that all scenario-declared cases have files:
   scenario_cases <- gsub("[0-9]*", "", strsplit(scenario, "-")[[1]])
   missing_casefiles <- scenario_cases[!scenario_cases %in% case_vals]
   if(length(missing_casefiles) > 0) {
@@ -166,7 +144,7 @@ get_caseargs <- function(folder, scenario, ext = ".txt",
       "is declared in your scenario ID but not in the argument case_files.\n"))
   }
 
-# Add case values to the letters:
+  # Add case values to the letters:
   case_vals <- sapply(case_vals, function(x)
     get_caseval(scenario, x))
 
@@ -200,10 +178,34 @@ get_caseargs <- function(folder, scenario, ext = ".txt",
     change_param_args_short <- NULL
   }
 
-# remove time varying elements from argvalues_out:
+  # remove time varying elements from argvalues_out:
   argvalues_out <- argvalues_out[which(args_null)]
 
-# and concatenate on the time varying arguments
+  # test that all specified arguments match function arguments:
+  for (i in seq_along(argvalues_out)) {
+    change_case_function <- paste0("change_", tolower(names(argvalues_out)[i]))
+    sample_case_function <- paste0("sample_", tolower(names(argvalues_out)[i]))
+    # special case... legacy effect:
+    if (change_case_function == "change_r")
+      change_case_function <- "change_retro"
+
+    fxn_name <- change_case_function # might be changed later
+
+    fxn_formals <- tryCatch(names(formals(change_case_function)),
+      error = function(e) "")
+    if (fxn_formals[1] == "..." | fxn_formals[1] == "") {
+      fxn_formals <- names(formals(sample_case_function))
+      fxn_name <- sample_case_function
+    }
+    matches <- names(argvalues_out[[i]]) %in% fxn_formals
+
+    if (sum(matches) != length(matches)) {
+      stop(paste0(names(argvalues_out[[i]])[!matches],
+        " is not an argument in the function ", fxn_name))
+    }
+  }
+
+  # and concatenate on the time varying arguments
   c(argvalues_out, list(tv_params = change_param_args_short))
 }
 
