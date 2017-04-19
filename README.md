@@ -30,7 +30,6 @@ Or, install the development version from GitHub:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("hadley/devtools", force = TRUE)
 devtools::install_github("ss3sim/ss3sim") # without vignettes (faster)
 devtools::install_github("ss3sim/ss3sim", build_vignettes = TRUE) # with vignettes
 ```
@@ -100,6 +99,8 @@ Example output from an ss3sim simulation. This example shows a crossed simulatio
 
 Papers published using ss3sim
 -----------------------------
+
+Stewart, I.J., C.C. Monnahan. 2016. Implications of process error in selectivity for approaches to weighting compositional data in fisheries stock assessments. Fisheries Research. In press. <http://dx.doi.org/10.1016/j.fishres.2016.06.018>. ([code repository](https://github.com/ss3sim/procdata)).
 
 Johnson, K.F., E. Councill, J.T. Thorson, E. Brooks, R.D. Methot, and A.E. Punt. 2016. Can autocorrelated recruitment be estimated using integrated assessment models and how does it affect population forecasts? Fisheries Research 183:222–232. <http://doi.org/10.1016/j.fishres.2016.06.004>. ([code repository](https://github.com/kellijohnson/AR-perf-testing)).
 

@@ -46,37 +46,38 @@
 #'                       years=list(seq(26, 44, 2),
 #'                           c(26:100)), write_file=FALSE)
 #'
-#' \dontrun{
 #' ## Run three  cases showing Multinomial, Dirichlet(1) and over-dispersed
 #' ## Dirichlet for different levels of sample sizes
 #' op <- par(mfrow = c(1,3))
+#' set.seed(1)
 #' for(samplesize in c(30, 100, 1000)){
 #'     ex4 <- sample_agecomp(dat_list=dat_list, outfile="test4.dat", fleets=c(1,2),
 #'                           Nsamp=list(samplesize, samplesize),
 #'                           write_file = FALSE,
-#'                           years=list(2000,2000), cpar=c(NA, 1))
+#'                           years=list(50,50), cpar=c(NA, 1))
 #'     ex5 <- sample_agecomp(dat_list=dat_list, outfile="test5.dat", fleets=c(1,2),
 #'                           Nsamp=list(samplesize, samplesize),
 #'                           write_file = FALSE,
-#'                           years=list(2000,2000), cpar=c(1, 1))
+#'                           years=list(50,50), cpar=c(1, 1))
 #'     ex6 <- sample_agecomp(dat_list=dat_list, outfile="test6.dat", fleets=c(1,2),
 #'                           Nsamp=list(samplesize, samplesize),
 #'                           write_file = FALSE,
-#'                           years=list(2000,2000), cpar=c(5, 1))
-#'     true <- subset(dat_list$agecomp, FltSvy==1 & Yr == 2000)[-(1:9)]
+#'                           years=list(50,50), cpar=c(5, 1))
+#'     true <- subset(dat_list$agecomp, FltSvy==1 & Yr == 50)[-(1:9)]
 #'     true <- true/sum(true)
-#'     plot(0:15, subset(ex4, FltSvy==1)[1,-(1:9)], type="b", ylim=c(0,1),
+#'     mult <- subset(ex4$agecomp, FltSvy==1)[1,-(1:9)]
+#'     mult <- mult/sum(mult)
+#'     plot(1:15, mult, type="b", ylim=c(0,1),
 #'          col=1, xlab="Age", ylab="Proportion", main=paste("Sample size=",
 #'          samplesize))
 #'     legend("topright", legend=c("Multinomial", "Dirichlet(1)",
 #'                                 "Dirichlet(5)", "Truth"),
 #'            lty=1, col=1:4)
-#'     lines((0:15), subset(ex5, FltSvy==1)[1,-(1:9)], type="b", col=2)
-#'     lines((0:15), subset(ex6, FltSvy==1)[1,-(1:9)], type="b", col=3)
-#'     lines((0:15), true, col=4, lwd=2)
+#'     lines((1:15), subset(ex5$agecomp, FltSvy==1)[1,-(1:9)], type="b", col=2)
+#'     lines((1:15), subset(ex6$agecomp, FltSvy==1)[1,-(1:9)], type="b", col=3)
+#'     lines((1:15), true, col=4, lwd=2)
 #' }
 #' par(op)
-#' }
 #' @family sampling functions
 #' @export
 sample_agecomp <- function(dat_list, outfile, fleets = c(1,2), Nsamp,

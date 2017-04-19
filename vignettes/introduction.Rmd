@@ -1143,7 +1143,7 @@ The package also currently allows for specifying the effective
 sample sizes separately from the sample sizes (see below).
 See the function documentation for `sample_agecomp` and `sample_lcomp` for more detail.
 
-Here we describe the implementation of the Dirichlet distribution utilized
+Here we describe the implementation of the Dirichlet distribution used
 in the package. This distribution has the same range and mean, but a
 different variance controlled by a parameter (the variance is determined
 exclusively by the cell probabilities and sample size n the multinomial)
@@ -1453,6 +1453,10 @@ Note that if the simulation aborts for any reason while `run_ss3sim` is running
 in parallel, you may need to abort the left over parallel processes. On Windows,
 open the task manager (Ctrl-Shift-Esc) and close any R processes.
 On a Mac, open Activity Monitor and force quit any R processes.
+Also, if you are working with a local development version of `ss3sim`
+and you are on a Windows machine, you may not be able to run in parallel 
+if you load the package with `devtools::load_all()`. 
+Instead, do a full install with `devtools::install()` (and potentially restart R if ss3sim was already loaded).
 
 # Putting SS3 in your path {#path}
 
