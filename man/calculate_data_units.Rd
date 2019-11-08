@@ -6,8 +6,8 @@
 types.}
 \usage{
 calculate_data_units(index_params = NULL, lcomp_params = NULL,
-  agecomp_params = NULL, calcomp_params = NULL, mlacomp_params = NULL,
-  wtatage_params = NULL)
+  agecomp_params = NULL, calcomp_params = NULL,
+  mlacomp_params = NULL, wtatage_params = NULL)
 }
 \arguments{
 \item{index_params}{Named lists containing the arguments for
@@ -45,15 +45,11 @@ for further information.
 See further examples in \code{\link{change_data}}.
 }
 \examples{
-## Should throw error since nothing passed
-# calculate_data_units()
 ## Only one fleet
-calculate_data_units(lcomp_params=list(fleets=1, years=c(3,4,6)))
+calculate_data_units(lcomp_params = list(fleets = 1, years = c(3, 4, 6)))
 ## Add new fleet
-calculate_data_units(lcomp_params=list(fleets=1, years=c(3,4,6)),
-                     agecomp_params=list(fleets=2, years=5))
-## If CAL data called, need other types even if not specified
-calculate_data_units(calcomp_params=list(fleets=1, years=c(3,4,6)))
+calculate_data_units(lcomp_params = list(fleets = 1, years = c(3, 4, 6)),
+                     agecomp_params = list(fleets = 2, years = 5))
 }
 \seealso{
 clean_data, change_data

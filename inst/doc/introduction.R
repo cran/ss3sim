@@ -1,20 +1,14 @@
 ## ---- echo = FALSE, message = FALSE--------------------------------------
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 
-## ---- install-cran, eval=FALSE-------------------------------------------
-#  install.packages("ss3sim")
-
 ## ---- install-and-load, eval=FALSE---------------------------------------
-#  # install.packages("devtools") # if needed
-#  devtools::install_github("ss3sim/ss3sim", dependencies = TRUE)
-#  
-#  # If you would like the vignettes available with the GitHub development version:
-#  devtools::install_github("ss3sim/ss3sim", dependencies = TRUE, build_vignettes = TRUE)
-#  
-#  # If you would like to run simulations in parallel, also install:
-#  install.packages(c("doParallel", "foreach"))
-
-## ---- load-package, eval=FALSE-------------------------------------------
+#  # CRAN version
+#  install.packages("ss3sim")
+#  # Github version, which depends on "devtools"
+#  # install.packages("devtools")
+#  devtools::install_github("ss3sim/ss3sim",
+#    ref = "development", dependencies = TRUE, build_vignettes = TRUE)
+#  # Load the package
 #  library("ss3sim")
 
 ## ---- help, eval=FALSE---------------------------------------------------
@@ -22,15 +16,12 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 #  help(package = "ss3sim")
 #  browseVignettes("ss3sim")
 
-## ---- citation, cache=FALSE----------------------------------------------
-citation("ss3sim")
-
 ## ---- locate-folders-----------------------------------------------------
 library(ss3sim)
 d <- system.file("extdata", package = "ss3sim")
-case_folder <- paste0(d, "/eg-cases")
-om <- paste0(d, "/models/cod-om")
-em <- paste0(d, "/models/cod-em")
+case_folder <- file.path(d, "eg-cases")
+om <- file.path(d, "models", "cod-om")
+em <- file.path(d, "models", "cod-em")
 
 ## ---- case-file-checks, eval=FALSE---------------------------------------
 #  run_ss3sim(iterations = 1, scenarios =
@@ -82,77 +73,58 @@ recdevs_det <- matrix(0, nrow = 100, ncol = 20)
 #      "D1-E0-F0-M0-cod",
 #      "D0-E1-F0-M0-cod",
 #      "D1-E1-F0-M0-cod"))
-
-## ---- read-output, eval=FALSE--------------------------------------------
+#  # Read in the data frames stored in the csv files
 #  scalar_dat <- read.csv("ss3sim_scalar.csv")
 #  ts_dat <- read.csv("ss3sim_ts.csv")
 
 ## ---- load-output--------------------------------------------------------
-data("ts_dat", package = "ss3sim")
 data("scalar_dat", package = "ss3sim")
+data("ts_dat", package = "ss3sim")
 
 ## ---- transform-output---------------------------------------------------
-scalar_dat <- transform(scalar_dat,
-  steep = (SR_BH_steep_om - SR_BH_steep_em)/SR_BH_steep_om,
-  logR0 = (SR_LN_R0_om - SR_LN_R0_em)/SR_LN_R0_om,
-  depletion = (depletion_om - depletion_em)/depletion_om,
-  SSB_MSY = (SSB_MSY_em - SSB_MSY_om)/SSB_MSY_om,
-  SR_sigmaR = (SR_sigmaR_em - SR_sigmaR_om)/SR_sigmaR_om,
-  NatM = (NatM_p_1_Fem_GP_1_em - NatM_p_1_Fem_GP_1_om)/
-     NatM_p_1_Fem_GP_1_om)
-
-ts_dat <- transform(ts_dat,
-  SpawnBio = (SpawnBio_em - SpawnBio_om)/SpawnBio_om,
-  Recruit_0 = (Recruit_0_em - Recruit_0_om)/Recruit_0_om)
-ts_dat <- merge(ts_dat, scalar_dat[,c("scenario", "replicate",
+scalar_dat <- calculate_re(scalar_dat, add = TRUE)
+ts_dat <- calculate_re(ts_dat, add = TRUE)
+ts_dat <- merge(ts_dat, scalar_dat[,c("scenario", "iteration",
     "max_grad")])
 
-scalar_dat_det <- subset(scalar_dat, E %in% c("E100", "E101"))
-scalar_dat_sto <- subset(scalar_dat, E %in% c("E0", "E1"))
-ts_dat_det <- subset(ts_dat, E %in% c("E100", "E101"))
-ts_dat_sto <- subset(ts_dat, E %in% c("E0", "E1"))
+scalar_dat_det <- scalar_dat[scalar_dat$E %in% c("E100", "E101"), ]
+scalar_dat_sto <- scalar_dat[scalar_dat$E %in% c("E0", "E1"), ]
+ts_dat_det <- ts_dat[ts_dat$E %in% c("E100", "E101"), ]
+ts_dat_sto <- ts_dat[ts_dat$E %in% c("E0", "E1"), ]
 
-## ---- reshape-scalars----------------------------------------------------
-scalar_dat_long <- reshape2::melt(scalar_dat[,c("scenario", "D", "E",
-  "replicate", "max_grad", "steep", "logR0", "depletion", "SSB_MSY",
-  "SR_sigmaR", "NatM")], id.vars = c("scenario", "D", "E",
-  "replicate", "max_grad"))
-scalar_dat_long <- plyr::rename(scalar_dat_long,
-  c("value" = "relative_error"))
+scalar_dat_long <- scalar_dat
+colnames(scalar_dat_long) <- gsub("(.+)_re", "RE _\\1", colnames(scalar_dat_long))
+scalar_dat_long <- reshape(scalar_dat_long, sep = " _", 
+  direction = "long",
+  varying = grep(" _", colnames(scalar_dat_long)),
+  idvar = c("scenario", "iteration"),
+  timevar = "parameter")
 
-## ---- relative-error-boxplots-det, fig.height=7, fig.width=5, fig.cap="Relative error box plots for deterministic runs. In case E100, *M* is fixed at the true value; in E101 we estimate *M*. In case D100, the standard deviation on the survey index observation error is 0.001."----
-library("ggplot2")
-p <- ggplot(subset(scalar_dat_long, E %in% c("E100", "E101") &
-       variable != "SR_sigmaR"), aes(D, relative_error)) +
-     geom_boxplot() +
-     geom_hline(aes(yintercept = 0), lty = 2) +
-     facet_grid(variable~E) +
-     theme_bw() + ylim(-0.4, 0.4)
+## ---- relative-error-boxplots-det, fig.height=7, fig.width=5, fig.cap="Box plots of the relative error (RE) for deterministic runs. *M* is fixed at the true value from the OM (E100) or estimated (E101). The standard deviation on the survey index observation error is 0.001 (D100)."----
+p <- plot_scalar_boxplot(scalar_dat_long[
+  scalar_dat_long$parameter %in% c("depletion", "SR_BH_steep", "SSB_MSY") &
+  scalar_dat_long$E %in% c("E100", "E101"), ], 
+  x = "D", y = "RE", re = FALSE,
+  vert = "E", horiz = "parameter", print = FALSE)
 print(p)
+# see plot_scalar_points() for another plotting function
 
 ## ---- plot-sto-ts, fig.height=5, fig.width=7, fig.cap="Time series of relative error in spawning stock biomass."----
-p <- ggplot(ts_dat_sto, aes(x = year)) + xlab("Year") +
-    theme_bw() + geom_line(aes(y = SpawnBio, group = replicate,
-    colour = max_grad), alpha = 0.3, size = 0.15) + facet_grid(D~E) +
-    scale_color_gradient(low = "gray", high = "red")
+p <- plot_ts_lines(ts_dat_sto, y='SpawnBio_re', 
+  vert = "E", horiz="D", print = FALSE, col = "max_grad")
 print(p)
 
 ## ---- ssb-ts-plots, fig.height=5, fig.width=7, cache=TRUE, fig.cap="Spawning stock biomass time series."----
-p <- ggplot(ts_dat_sto, aes(year, SpawnBio_em, group = replicate)) +
-  geom_line(alpha = 0.3, aes(colour = max_grad)) + facet_grid(D~E) +
-  scale_color_gradient(low = "darkgrey", high = "red") + theme_bw()
+p <- plot_ts_lines(ts_dat_sto, y='SpawnBio_em', 
+  vert = "E", horiz="D", print = FALSE, col = "max_grad")
 print(p)
 
-## ---- relative-error-boxplots-sto, fig.height=7, fig.width=5, cache=TRUE, fig.cap="Relative error box plots for stochastic runs. In case E0, *M* is fixed at the true value; in E1 we estimate *M*. In case D1, the standard deviation on the survey index observation error is 0.4. In case D0, the standard deviation is quartered representing an increase in survey sampling effort."----
-p <- ggplot(subset(scalar_dat_long, E %in% c("E0", "E1")),
-       aes(D, relative_error)) +
-     geom_boxplot() + geom_hline(aes(yintercept = 0), lty = 2) +
-     facet_grid(variable~E) +
-     geom_jitter(aes(colour = max_grad),
-       position = position_jitter(height = 0, width = 0.1),
-       alpha = 0.4, size = 1.5) +
-     scale_color_gradient(low = "darkgrey", high = "red") +
-     theme_bw()
+## ---- relative-error-boxplots-sto, fig.height=7, fig.width=5, cache=TRUE, fig.cap="Box plots of relative error (RE) for stochastic runs. *M* is fixed at the true value from the OM (E0) or estimated (E1). The standard deviation on the survey index observation error is 0.4 (D1) or 0.1 (D0), representing an increase in survey sampling effort."----
+p <- plot_scalar_boxplot(scalar_dat_long[
+  scalar_dat_long$parameter %in% c("depletion", "SR_BH_steep", "SSB_MSY") &
+  scalar_dat_long$E %in% c("E0", "E1"), ], 
+  x = "D", y = "RE", re = FALSE, 
+  vert = "E", horiz = "parameter", print = FALSE)
 print(p)
 
 ## ---- ss3sim-base-eg, eval=FALSE-----------------------------------------
@@ -160,18 +132,18 @@ print(p)
 #  om <- paste0(d, "/models/cod-om")
 #  em <- paste0(d, "/models/cod-em")
 #  
-#  F0 <- list(years = 1913:2012, years_alter = 1913:2012, fvals =
+#  F0 <- list(years = 1:100, years_alter = 1:100, fvals =
 #    c(rep(0, 25), rep(0.114, 75)))
 #  
-#  index1 <- list(fleets = 2, years = list(seq(1974, 2012, by = 2)),
+#  index1 <- list(fleets = 2, years = list(seq(60, 100, by = 2)),
 #    sds_obs = list(0.1))
 #  
 #  lcomp1 <- list(fleets = c(1, 2), Nsamp = list(100, 100), years =
-#    list(1938:2012, seq(1974, 2012, by = 2)), lengthbin_vector = NULL,
+#    list(25:100, seq(60, 100, by = 2)), lengthbin_vector = NULL,
 #    cpar = c(1, 1))
 #  
 #  agecomp1 <- list(fleets = c(1, 2), Nsamp = list(100, 100), years =
-#    list(1938:2012, seq(1974, 2012, by = 2)), agebin_vector = NULL,
+#    list(25:100, seq(60, 100, by = 2)), agebin_vector = NULL,
 #    cpar = c(1, 1))
 #  
 #  E0 <- list(natM_type = "1Parm", natM_n_breakpoints = NULL,
@@ -180,6 +152,7 @@ print(p)
 #  
 #  M0 <- list(NatM_p_1_Fem_GP_1 = rep(0, 100))
 #  
+#  # todo: add data_params so that this function runs.
 #  ss3sim_base(iterations = 1:20, scenarios = "D1-E0-F0-M0-cod",
 #    f_params = F0, index_params = index1, lcomp_params = lcomp1,
 #    agecomp_params = agecomp1, estim_params = E0, tv_params = M0,
@@ -217,7 +190,8 @@ print(p)
 
 ## ---- parallel-one, eval=FALSE-------------------------------------------
 #  require(doParallel)
-#  registerDoParallel(cores = 4)
+#  
+#  registerDoParallel(cores = ifelse(Sys.getenv("NUMBER_OF_PROCESSORS")<6, 2, 4))
 
 ## ---- parallel-two, eval=FALSE-------------------------------------------
 #  require(foreach)
@@ -228,9 +202,7 @@ print(p)
 ## ---- parallel-three, eval=FALSE-----------------------------------------
 #  run_ss3sim(iterations = 1, scenarios =
 #    c("D1-E0-F0-cod",
-#      "D2-E0-F0-cod",
-#      "D1-E1-F0-cod",
-#      "D2-E1-F0-cod"),
+#      "D1-E1-F0-cod"),
 #    case_files =
 #      list(F = "F", D = c("index", "lcomp", "agecomp"), E = "E"),
 #    case_folder = case_folder, om_dir = om, em_dir = em,

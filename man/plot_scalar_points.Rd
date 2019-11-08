@@ -4,9 +4,9 @@
 \alias{plot_scalar_points}
 \title{Plot scalar values as points.}
 \usage{
-plot_scalar_points(data, x, y, horiz = NULL, horiz2 = NULL, vert = NULL,
-  vert2 = NULL, color = NULL, relative.error = FALSE, axes.free = TRUE,
-  print = TRUE)
+plot_scalar_points(data, x, y, horiz = NULL, horiz2 = NULL,
+  vert = NULL, vert2 = NULL, color = NULL, relative.error = FALSE,
+  axes.free = TRUE, print = TRUE)
 }
 \arguments{
 \item{data}{A valid data frame containing scalar or timeseries values
@@ -63,7 +63,7 @@ functions. Scalar plots require a value for \code{x}, while for ts plots
 makes no sense to use another column. Boxplots cannot have a color
 mapped to them like points or lines, and thus \code{color} is not a
 valid argument. The ts point and line plots are grouped internally by
-'ID', which is a combination of scenario and replicate.
+'ID', which is a combination of scenario and iteration.
 }
 \section{Output}{
  These functions print the \code{ggplot} object, but
